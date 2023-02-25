@@ -237,7 +237,10 @@ describe('drone', () => {
         })
         expect(response.status).toBe(200)
 
-        expect(await response.text()).toBe(`${droneData.batteryLevel}`)
+        const jsonResponse = await response.json()
+        expect(jsonResponse).toBeTruthy()
+        expect(jsonResponse.remaining).toBe(droneData.batteryLevel)
+        expect(jsonResponse.history).toMatchObject([])
     })
 })
 
