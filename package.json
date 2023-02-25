@@ -1,18 +1,23 @@
 {
   "name": "drones",
   "version": "1.0.0",
-  "description": "Drones REST API Documentation",
+  "description": "Drones REST API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "test": "vitest"
+  },
+  "engines": {
+    "pnpm": "7.18.0",
+    "node": "19.1.0"
   },
   "keywords": [
     "node",
     "fastify",
     "sqlite",
     "swagger",
-    "vitest"
+    "vitest",
+    "toad-scheduler"
   ],
   "author": "FAD",
   "license": "ISC",
