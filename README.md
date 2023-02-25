@@ -46,4 +46,4 @@ curl --header "Content-Type: application/json" --request GET http://localhost:30
 ```
 
 ## Tasks
-The periodic task run every 1 minute, it checks every drone with remaining battery and fake the battery draining reducing 1% each time.
+The periodic task run every 60 seconds, it checks each drone with remaining battery and fake the battery draining reducing it by 1% each time.
