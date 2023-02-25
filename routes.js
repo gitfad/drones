@@ -10,6 +10,8 @@ const BATTERY_LEVEL_PATH = '/battery-level'
 const SERIAL_NUMBER_PARAM_PATH = '/:serialNumber'
 const LOADING_PATH = '/loading'
 
+const DRONE_NOT_FOUND = 'drone not found'
+
 const DRONE_SCHEMA = {
     type: 'object',
     properties: {
@@ -81,6 +83,9 @@ const loadDroneWithMedicationItems = {
     schema: {
         description: 'Load a registered drone with more medical items',
         params: SERIAL_NUMBER_SCHEMA,
+        body: {
+            type: 'array'
+        },
         response: {
             200: RESULTS_SCHEMA
         }
@@ -88,8 +93,17 @@ const loadDroneWithMedicationItems = {
     handler: async (request, reply) => {
         const { serialNumber } = request.params
         const medicationItems = request.body
-        const results = await Medication.loadDrone(request.server.sqlite, serialNumber, medicationItems)
-        return { size: results.length, results }
+
+        try {
+            const results = await Medication.loadDrone(request.server.sqlite, serialNumber, medicationItems)
+            return { size: results.length, results }
+        } catch (err) {
+            if (err.message === 'drone didn\'t exists') {
+                reply.code(404).send({ message: DRONE_NOT_FOUND });
+            } else {
+                reply.code(400).send({ message: err.message });
+            }
+        }
     }
 }
 
@@ -105,8 +119,16 @@ const getDroneMedicationItemsLoaded = {
     },
     handler: async (request, reply) => {
         const { serialNumber } = request.params
-        const results = await Medication.getDroneLoad(request.server.sqlite, serialNumber)
-        return { size: results.length, results }
+        try {
+            const results = await Medication.getDroneLoad(request.server.sqlite, serialNumber)
+            return { size: results.length, results }
+        } catch (err) {
+            if (err.message === 'drone didn\'t exists') {
+                reply.code(404).send({ message: DRONE_NOT_FOUND });
+            } else {
+                reply.code(400).send({ message: err.message });
+            }
+        }
     }
 }
 
@@ -140,7 +162,7 @@ const getDroneBatteryLevel = {
         const { serialNumber } = request.params
         const drone = await Drone.get(request.server.sqlite, serialNumber)
         if (drone === undefined) {
-            reply.code(404).send({ message: 'drone not found' })
+            reply.code(404).send({ message: DRONE_NOT_FOUND })
         } else {
             return drone.batteryLevel
         }
@@ -151,7 +173,9 @@ module.exports = {
     DRONES_PATH,
     MEDICATION_ITEMS_PATH,
     AVAILABILITY_PATH,
+    LOADING_PATH,
     BATTERY_LEVEL_PATH,
+    DRONE_NOT_FOUND,
     list: [
         registerDrone,
         loadDroneWithMedicationItems,

@@ -21,12 +21,19 @@ const initialize = async (sqlite) => {
     await sqlite.run("CREATE TABLE IF NOT EXISTS Drones( serialNumber varchar(100) PRIMARY KEY, model varchar(15) NOT NULL, weightLimit int, batteryLevel int, state varchar(10) NOT NULL)")
 }
 
+const cleanUp = async (sqlite) => {
+    await sqlite.run("DELETE FROM Drones")
+}
+
 const get = (sqlite, serialNumber) => {
     return sqlite.get("SELECT serialNumber, model, weightLimit, batteryLevel, state FROM Drones WHERE serialNumber = $serialNumber", { "$serialNumber": serialNumber })
 }
 
 const getAllLoadingAvailability = (sqlite) => {
-    return sqlite.all("SELECT serialNumber, model, weightLimit, batteryLevel, state FROM Drones WHERE state = $state", { "$state": STATE_IDLE_TYPE })
+    return sqlite.all("SELECT serialNumber, model, weightLimit, batteryLevel, state FROM Drones WHERE state = $state AND batteryLevel >= $minimumBattery", { 
+        "$state": STATE_IDLE_TYPE, 
+        "$minimumBattery":  25
+    })
 }
 
 const register = async (sqlite, serialNumber, model, batteryLevel) => {
@@ -76,18 +83,22 @@ const setState = async (sqlite, drone, state) => {
     })
 
     if (updatedResult.changes === 0) {
-        throw new Error('drone without enought battery level')
+        throw new Error('drone without enough battery level')
     }
 }
 
 module.exports = {
     MODEL_TYPES,
+    MODEL_HEAVY_TYPE,
     STATE_TYPES,
     STATE_IDLE_TYPE,
+    STATE_LOADING_TYPE,
+    STATE_LOADED_TYPE,
     MAXIMUM_SERIAL_NUMBER_LENGTH,
     MAXIMUM_WEIGHT_LIMIT,
     MAXIMUM_BATTERY_CAPACITY,
     initialize,
+    cleanUp,
     get,
     getAllLoadingAvailability,
     register,
