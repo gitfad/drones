@@ -81,6 +81,12 @@ const setState = async (sqlite, drone, state) => {
 }
 
 module.exports = {
+    MODEL_TYPES,
+    STATE_TYPES,
+    STATE_IDLE_TYPE,
+    MAXIMUM_SERIAL_NUMBER_LENGTH,
+    MAXIMUM_WEIGHT_LIMIT,
+    MAXIMUM_BATTERY_CAPACITY,
     initialize,
     get,
     getAllLoadingAvailability,
