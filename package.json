@@ -7,14 +7,22 @@
     "start": "node server.js",
     "test": "vitest"
   },
-  "keywords": ["node", "fastify", "sqlite", "swagger", "vitest"],
+  "keywords": [
+    "node",
+    "fastify",
+    "sqlite",
+    "swagger",
+    "vitest"
+  ],
   "author": "FAD",
   "license": "ISC",
   "dependencies": {
+    "@fastify/schedule": "^4.1.0",
     "@fastify/swagger": "^8.3.1",
     "@fastify/swagger-ui": "^1.4.0",
     "fastify": "^4.13.0",
-    "fastify-sqlite": "^1.1.0"
+    "fastify-sqlite": "^1.1.0",
+    "toad-scheduler": "^2.2.0"
   },
   "devDependencies": {
     "uuid": "^9.0.0",

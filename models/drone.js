@@ -1,3 +1,5 @@
+const BatteryTracker = require('./battery-tracker')
+
 const MODEL_LIGHT_TYPE = 'Lightweight'
 const MODEL_MIDDLE_TYPE = 'Middleweight'
 const MODEL_CRUISER_TYPE = 'Cruiserweight'
@@ -16,6 +18,7 @@ const STATE_TYPES = [STATE_IDLE_TYPE, STATE_LOADING_TYPE, STATE_LOADED_TYPE, STA
 const MAXIMUM_BATTERY_CAPACITY = 100
 const MAXIMUM_SERIAL_NUMBER_LENGTH = 100
 const MAXIMUM_WEIGHT_LIMIT = 500
+const FAKE_BATTERY_LEVEL_DISCHARGE = 1 // 1% less every check
 
 const initialize = async (sqlite) => {
     await sqlite.run("CREATE TABLE IF NOT EXISTS Drones( serialNumber varchar(100) PRIMARY KEY, model varchar(15) NOT NULL, weightLimit int, batteryLevel int, state varchar(10) NOT NULL)")
@@ -25,14 +28,44 @@ const cleanUp = async (sqlite) => {
     await sqlite.run("DELETE FROM Drones")
 }
 
+const checkBatteriesLevel = async (sqlite) => {
+    const results = await sqlite.all("SELECT serialNumber, batteryLevel FROM Drones WHERE batteryLevel > 0", {})
+    for (let idx = 0; idx < results.length; idx++) {
+        const { serialNumber, batteryLevel } = results[idx]
+        const currentBatteryLevel = batteryLevel - FAKE_BATTERY_LEVEL_DISCHARGE
+
+        const updatedResult = await sqlite.run("UPDATE Drones SET batteryLevel = $batteryLevel WHERE serialNumber = $serialNumber", {
+            "$serialNumber": serialNumber,
+            "$batteryLevel": currentBatteryLevel
+        })
+        if (updatedResult.changes === 0) {
+            throw new Error('drone battery level update failed')
+        }
+
+        await BatteryTracker.track(sqlite, serialNumber, currentBatteryLevel)
+    }
+}
+
+const setState = async (sqlite, drone, state) => {
+    const updatedResult = await sqlite.run("UPDATE Drones SET state = $state WHERE serialNumber = $serialNumber AND batteryLevel >= $minimumBattery", {
+        "$serialNumber": drone.serialNumber,
+        "$state": state,
+        "$minimumBattery": (state === STATE_LOADING_TYPE ? 25 : 0)
+    })
+
+    if (updatedResult.changes === 0) {
+        throw new Error('drone without enough battery level')
+    }
+}
+
 const get = (sqlite, serialNumber) => {
     return sqlite.get("SELECT serialNumber, model, weightLimit, batteryLevel, state FROM Drones WHERE serialNumber = $serialNumber", { "$serialNumber": serialNumber })
 }
 
 const getAllLoadingAvailability = (sqlite) => {
-    return sqlite.all("SELECT serialNumber, model, weightLimit, batteryLevel, state FROM Drones WHERE state = $state AND batteryLevel >= $minimumBattery", { 
-        "$state": STATE_IDLE_TYPE, 
-        "$minimumBattery":  25
+    return sqlite.all("SELECT serialNumber, model, weightLimit, batteryLevel, state FROM Drones WHERE state = $state AND batteryLevel >= $minimumBattery", {
+        "$state": STATE_IDLE_TYPE,
+        "$minimumBattery": 25
     })
 }
 
@@ -75,18 +108,6 @@ const register = async (sqlite, serialNumber, model, batteryLevel) => {
     }
 }
 
-const setState = async (sqlite, drone, state) => {
-    const updatedResult = await sqlite.run("UPDATE Drones SET state = $state WHERE serialNumber = $serialNumber AND batteryLevel >= $minimumBattery", {
-        "$serialNumber": drone.serialNumber,
-        "$state": state,
-        "$minimumBattery": (state === STATE_LOADING_TYPE ? 25 : 0)
-    })
-
-    if (updatedResult.changes === 0) {
-        throw new Error('drone without enough battery level')
-    }
-}
-
 module.exports = {
     MODEL_TYPES,
     MODEL_HEAVY_TYPE,
@@ -99,6 +120,7 @@ module.exports = {
     MAXIMUM_BATTERY_CAPACITY,
     initialize,
     cleanUp,
+    checkBatteriesLevel,
     get,
     getAllLoadingAvailability,
     register,

@@ -1,9 +1,10 @@
 import { describe, test, expect, beforeAll, afterAll } from 'vitest'
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid'
 const API = require('./api')
 const Routes = require('./routes')
 const Drone = require('./models/drone')
 const Medication = require('./models/medication')
+const BatteryTracker = require('./models/battery-tracker')
 
 let api, port, base
 
@@ -121,6 +122,7 @@ describe('drone', () => {
     test('should get available drones for loading', async () => {
         await Drone.cleanUp(api.sqlite)
         await Medication.cleanUp(api.sqlite)
+        await BatteryTracker.cleanUp(api.sqlite)
 
         const droneDataA = { ...getMockedRegistrationDrone(), batteryLevel: 75 }
 
@@ -166,6 +168,7 @@ describe('drone', () => {
     test('should get available drones for loading excluding drones with battery level below 25%', async () => {
         await Drone.cleanUp(api.sqlite)
         await Medication.cleanUp(api.sqlite)
+        await BatteryTracker.cleanUp(api.sqlite)
 
         const droneDataA = { ...getMockedRegistrationDrone(), batteryLevel: 10 }
 

@@ -1,5 +1,6 @@
 const Drone = require('./models/drone')
 const Medication = require('./models/medication')
+const BatteryTracker = require('./models/battery-tracker')
 
 const POST = 'POST'
 const GET = 'GET'
@@ -48,7 +49,13 @@ const RESULTS_SCHEMA = {
     }
 }
 
-const NUMBER_RESULT_SCHEMA = { type: 'number' }
+const BATTERY_LEVEL_RESULT_SCHEMA = {
+    type: 'object',
+    properties: {
+        remaining: { type: 'number' },
+        history: { type: 'array' }
+    }
+}
 
 const ERROR_SCHEMA = {
     type: 'object',
@@ -99,9 +106,9 @@ const loadDroneWithMedicationItems = {
             return { size: results.length, results }
         } catch (err) {
             if (err.message === 'drone didn\'t exists') {
-                reply.code(404).send({ message: DRONE_NOT_FOUND });
+                reply.code(404).send({ message: DRONE_NOT_FOUND })
             } else {
-                reply.code(400).send({ message: err.message });
+                reply.code(400).send({ message: err.message })
             }
         }
     }
@@ -124,9 +131,9 @@ const getDroneMedicationItemsLoaded = {
             return { size: results.length, results }
         } catch (err) {
             if (err.message === 'drone didn\'t exists') {
-                reply.code(404).send({ message: DRONE_NOT_FOUND });
+                reply.code(404).send({ message: DRONE_NOT_FOUND })
             } else {
-                reply.code(400).send({ message: err.message });
+                reply.code(400).send({ message: err.message })
             }
         }
     }
@@ -154,7 +161,7 @@ const getDroneBatteryLevel = {
         description: 'Get the current battery level from a registered drone',
         params: SERIAL_NUMBER_SCHEMA,
         response: {
-            200: NUMBER_RESULT_SCHEMA,
+            200: BATTERY_LEVEL_RESULT_SCHEMA,
             404: ERROR_SCHEMA
         }
     },
@@ -164,7 +171,8 @@ const getDroneBatteryLevel = {
         if (drone === undefined) {
             reply.code(404).send({ message: DRONE_NOT_FOUND })
         } else {
-            return drone.batteryLevel
+            const history = await BatteryTracker.getTrackedDrone(request.server.sqlite, serialNumber)
+            return { remaining: drone.batteryLevel, history }
         }
     }
 }
